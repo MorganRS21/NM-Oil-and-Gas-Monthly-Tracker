@@ -16,10 +16,14 @@ hrbrthemes::import_roboto_condensed()
 # Read data - data should be placed in a folder in your directory so it's easy to navigate to
 # Read data and create CSV file
 TAP <- read.xlsx('data/County Vol_Val By Filing Period 202401110828.xlsx', detectDates = TRUE)
-Legacy <- read.csv('data/Legacy_data.csv')
 csv_file_name <- sprintf("data/County_Vol_Val_%s.csv", format(Sys.Date(), "%Y%m%d"))
 write.csv(TAP, file = csv_file_name, row.names = FALSE)
-County_vol_val <- read.csv(csv_file_name)
+
+TAP <- read.csv(csv_file_name)
+Legacy <- read.csv('data/Legacy_data.csv')
+
+# merge two data frames
+County_vol_val <- rbind(Legacy,TAP)
 
 # Format filing period variable as dates
 County_vol_val$Filing.Period <- as.Date(County_vol_val$Filing.Period, origin = '1960-01-01')
@@ -32,10 +36,16 @@ Raton <- subset(County_vol_val, County_vol_val$Basin=="Raton")
 Bravo_Dome <- subset(County_vol_val, County_vol_val$Basin=="Bravo Dome")
 ##################################################################################################################################################
 
-# Function to filter data by land type and product code
-filter_data <- function(data, land_type, product_codes) {
-  land_data <- subset(data, data$Land.Type == land_type & data$Product.Code %in% product_codes)
-  return(land_data)
+# Combined function to filter data by optional land type, basin, and product codes
+filter_data_combined <- function(data, product_codes, land_type = NULL, basin = NULL) {
+  if (!is.null(land_type)) {
+    data <- subset(data, Land.Type == land_type)
+  }
+  if (!is.null(basin)) {
+    data <- subset(data, Basin == basin)
+  }
+  filtered_data <- subset(data, Product.Code %in% product_codes)
+  return(filtered_data)
 }
 
 # Function to perform aggregation on selected columns
@@ -77,29 +87,22 @@ fed_gas_comb <- aggregate_data(filter_data(County_vol_val, "Federal", ng_codes))
 
 ################################################################################
 #################################################################################
-# Filter by commodity
-# Define a function to filter data based on Product Codes
-filter_by_product_code <- function(data, product_codes) {
-  subset(data, Product.Code %in% product_codes)
-}
-
-# Apply function to filter datasets
-# For County_vol_val data
-Oil_State <- filter_by_product_code(County_vol_val, oil_codes)
-NG_State <- filter_by_product_code(County_vol_val, ng_codes)
-CO2_State <- filter_by_product_code(County_vol_val, co2_code)
-Helium_State <- filter_by_product_code(County_vol_val, helium_code)
+# Filter by commodity - Apply same function from lines 39-48 to filter 
+Oil_State <-  filter_data_combined(County_vol_val, oil_codes)
+NG_State <- filter_data_combined(County_vol_val, ng_codes)
+CO2_State <- filter_data_combined(County_vol_val, co2_code)
+Helium_State <- filter_data_combined(County_vol_val, helium_code)
 
 ###############################################################################
 
 # Filtering by basin and product type
-# Apply same filter function in line 80 to the basins
+# Apply same filter function from line 39 to the basins
 basins <- list(Permian = Permian, San_Juan = San_Juan, Raton = Raton, Bravo_Dome = Bravo_Dome)
 for (basin_name in names(basins)) {
-  assign(paste0(basin_name, "_Oil"), filter_by_product_code(basins[[basin_name]], oil_codes))
-  assign(paste0(basin_name, "_NatGas"), filter_by_product_code(basins[[basin_name]], ng_codes))
-  assign(paste0(basin_name, "_CO2"), filter_by_product_code(basins[[basin_name]], co2_code))
-  assign(paste0(basin_name, "_Helium"), filter_by_product_code(basins[[basin_name]], helium_code))
+  assign(paste0(basin_name, "_Oil"), filter_data_combined(basins[[basin_name]], oil_codes))
+  assign(paste0(basin_name, "_NatGas"), filter_data_combined(basins[[basin_name]], ng_codes))
+  assign(paste0(basin_name, "_CO2"), filter_data_combined(basins[[basin_name]], co2_code))
+  assign(paste0(basin_name, "_Helium"), filter_data_combined(basins[[basin_name]], helium_code))
 }
 
 ##############################################################################
