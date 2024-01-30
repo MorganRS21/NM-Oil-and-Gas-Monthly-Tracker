@@ -1,5 +1,6 @@
 ############################################################################# 
 # Oil and Gas Monthly Tracking Reports 
+# Date edited:  01/30/2024
 ##############################################################################
 
 # Use this program to produce monthly tracking reports
@@ -15,6 +16,7 @@ hrbrthemes::import_roboto_condensed()
 # Read data - data should be placed in a folder in your directory so it's easy to navigate to
 # Read data and create CSV file
 TAP <- read.xlsx('data/County Vol_Val By Filing Period 202401110828.xlsx', detectDates = TRUE)
+Legacy <- read.csv('data/Legacy_data.csv')
 csv_file_name <- sprintf("data/County_Vol_Val_%s.csv", format(Sys.Date(), "%Y%m%d"))
 write.csv(TAP, file = csv_file_name, row.names = FALSE)
 County_vol_val <- read.csv(csv_file_name)
